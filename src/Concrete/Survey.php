@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Concrete;
+namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
 
 use SamIT\LimeSurvey\Interfaces\GroupInterface;

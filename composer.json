@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "sam-it/ls-interfaces": "^0.2.0"
+        "sam-it/ls-interfaces": "^0.3.0"
     },
     "autoload": {
         "psr-4": {

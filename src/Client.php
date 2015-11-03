@@ -1,10 +1,9 @@
 <?php
 namespace SamIT\LimeSurvey\JsonRpc;
 
-use Concrete\Survey;
+use SamIT\LimeSurvey\JsonRpc\Concrete\Survey;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
-
-class LimeSurvey
+class Client
 {
     /**
      * A cache that is only kept for the current request.
@@ -32,7 +31,8 @@ class LimeSurvey
     {
         $this->client = $client;
         $this->username = $username;
-        $this->password = $this->password;
+        $this->password = $password;
+
     }
 
 
@@ -59,7 +59,7 @@ class LimeSurvey
         if (!isset($this->sessionKey)) {
             throw new \Exception("Failed to obtain session key: {$response['status']}");
         }
-        return $this->_sessionKey;
+        return $this->sessionKey;
     }
 
     /**
@@ -94,10 +94,12 @@ class LimeSurvey
      */
     public function getSurvey($id, $language = null)
     {
-        $result = new Survey($this);
-        $data = $this->getLanguageProperties($id, $language);
-        vdd($data);
+        $data = $this->getLanguageProperties($id, [
+            'title',
+            'description'
+        ], $language);
 
+        return new Survey($this, $data);
     }
 
     /**
@@ -291,4 +293,3 @@ public function listUsers()
     }
 
 }
-?>
