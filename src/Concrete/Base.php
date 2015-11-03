@@ -15,12 +15,19 @@ class Base
 
     protected $attributes;
 
-    public function __construct(Client $client, $attributes = [])
+    /**
+     * @var string The language of this object.
+     */
+    protected $language;
+
+    public function __construct(Client $client, $attributes = [], $properties = [])
     {
         $this->client = $client;
         $this->attributes = $attributes;
+        foreach ($properties as $property => $value) {
+            $this->$property = $value;
+        }
 
     }
-
 
 }

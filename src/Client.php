@@ -1,6 +1,8 @@
 <?php
 namespace SamIT\LimeSurvey\JsonRpc;
 
+use SamIT\LimeSurvey\JsonRpc\Concrete\Group;
+use SamIT\LimeSurvey\JsonRpc\Concrete\Question;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Survey;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
 class Client
@@ -98,9 +100,66 @@ class Client
             'title',
             'description'
         ], $language);
+        $data2 = $this->getSurveyProperties($id, [
+            'language',
+            'additional_languages'
+        ], $language);
+        $data['id'] = (int)$id;
+        $data['language'] = $language;
+        if (!empty($data2['additional_languages'])) {
+            $data['languages'] = explode(' ', $data2['additional_languages']);
+        }
+        $data['languages'][] = $data2['language'];
 
-        return new Survey($this, $data);
+        return new Survey($this, $data, [
+            'language' => $language
+        ]);
     }
+
+    public function getGroups($surveyId, $language) {
+        $result = [];
+        // First filter by language.
+        foreach ($this->listGroups($surveyId) as $data) {
+            if ($data['language'] === $language) {
+                $result[] = new Group($this, [
+                    'id' => (int)$data['gid'],
+                    'title' => $data['group_name'],
+                    'description'=> $data['description']
+                ], [
+                    'language'=> $language,
+                    'surveyId' => $surveyId
+                ]);
+            }
+
+        }
+        return $result;
+    }
+
+    public function getQuestions($surveyId, $groupId, $language) {
+        $result = [];
+
+        $subQuestions = [];
+        foreach ($this->listQuestions($surveyId, $groupId, $language) as $data) {
+            $question = new Question($this, [
+                'id' => (int)$data['qid'],
+                'text' => $data['question'],
+            ], [
+                'language' => $language,
+                'surveyId' => $surveyId
+            ]);
+            if ($data['parent_qid'] == 0) {
+                $result[$question->getId()] = $question;
+            } else {
+                $subQuestions[(int) $data['parent_qid']][] = $question;
+            }
+        }
+        foreach($subQuestions as $parent => $children) {
+            $result[$parent]->setSubQuestions($children);
+        }
+        return array_values($result);
+    }
+
+
 
     /**
      * Create a new token.
@@ -144,7 +203,7 @@ class Client
             }
         }
         if (false === $result = $this->cacheGet($key)) {
-            $data = $this->executeRequest('get_language_properties', $surveyId, $properties);
+            $data = $this->executeRequest('get_language_properties', $surveyId, $properties, $language);
             if (isset($data['status'])) {
                 throw new \Exception($data['status']);
             }
@@ -219,7 +278,18 @@ public function listGroups($surveyId)
     return $result;
 }
 
-public function listUsers()
+public function listQuestions($surveyId, $groupId, $language)
+{
+    $key = __CLASS__ . __FUNCTION__ . (isset($user) ? $user : "");
+    if (false === $result = $this->cacheGet($key)) {
+        $result = $this->executeRequest('list_questions', $surveyId, $groupId, $language);
+        $this->cacheSet($key, $result, 3600);
+    }
+    return $result;
+}
+
+
+    public function listUsers()
 {
     $key = __CLASS__ . __FUNCTION__;
     if (false === $result = $this->cacheGet($key)) {

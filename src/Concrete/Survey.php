@@ -5,9 +5,10 @@ namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
 
 use SamIT\LimeSurvey\Interfaces\GroupInterface;
+use SamIT\LimeSurvey\Interfaces\LocaleAwareInterface;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
 
-class Survey extends Base implements SurveyInterface
+class Survey extends Base implements SurveyInterface, LocaleAwareInterface
 {
 
     /**
@@ -23,7 +24,7 @@ class Survey extends Base implements SurveyInterface
      */
     public function getGroups()
     {
-        // TODO: Implement getGroups() method.
+        return $this->client->getGroups($this->getId(), $this->getLanguage());
     }
 
     /**
@@ -40,5 +41,38 @@ class Survey extends Base implements SurveyInterface
     public function getTitle()
     {
         return $this->attributes['title'];
+    }
+
+    /**
+     * @return array Languages in which the survey is available
+     */
+    public function getLanguages()
+    {
+        return $this->attributes['languages'];
+    }
+
+    /**
+     * @return string The default language of the survey.
+     */
+    public function getDefaultLanguage()
+    {
+        return $this->attributes['language'];
+    }
+
+    /**
+     * @return string The current language for the object.
+     */
+    public function getLanguage()
+    {
+        return $this->language;
+    }
+
+    /**
+     * @param string $language
+     * @return self A copy of the object localized to the current locale.
+     */
+    public function getLocalized($language)
+    {
+        return $this->client->getSurvey($this->getId(), $language);
     }
 }
