@@ -1,0 +1,22 @@
+{
+    "name": "sam-it/ls2-jsonrpc-client",
+    "description": "Implementation of ls-interfaces and jsonRPC for LS2.x",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Sam Mousa",
+            "email": "sam@mousa.nl"
+        }
+    ],
+    "require": {
+        "sam-it/ls-interfaces": "^0.2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SamIT\\LimeSurvey\\JsonRpc\\" : [
+                "src/"
+            ]
+        }
+    }
+
+}
