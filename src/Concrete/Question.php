@@ -13,8 +13,20 @@ class Question extends Base implements QuestionInterface
     protected $language;
     protected $surveyId;
 
+    protected $answers;
+
     /** @var  QuestionInterface[] */
     protected $subQuestions = [];
+
+
+    /**
+     * The depth of this question.
+     * @var int
+     */
+    protected $depth = 0;
+
+
+
     /**
      * @return int The unique ID for this survey.
      */
@@ -24,11 +36,17 @@ class Question extends Base implements QuestionInterface
     }
 
     /**
+     * @int $dimension
      * @return QuestionInterface[]
      */
-    public function getQuestions()
+    public function getQuestions($dimension)
     {
-        return $this->subQuestions;
+        return array_map(function(SubQuestion $question) {
+            $result = clone $question;
+            $result->depth = $this->depth + 1;
+            return $result;
+        }, $this->subQuestions[$dimension]);
+
     }
 
     /**
@@ -52,10 +70,26 @@ class Question extends Base implements QuestionInterface
      */
     public function getAnswers()
     {
-        return $this->client->getAnswers($this->getId(), $this->language);
+        return isset($this->answers) ? $this->answers : null;
     }
 
     public function setSubQuestions(array $value) {
         $this->subQuestions = $value;
+    }
+
+    /**
+     * @return string Question code
+     */
+    public function getTitle()
+    {
+        return $this->attributes['title'];
+    }
+
+    /**
+     * @return int The number of axes for this question.
+     */
+    public function getDimensions()
+    {
+        return count($this->subQuestions);
     }
 }

@@ -1,8 +1,11 @@
 <?php
 namespace SamIT\LimeSurvey\JsonRpc;
 
+use SamIT\LimeSurvey\Interfaces\QuestionInterface;
+use SamIT\LimeSurvey\JsonRpc\Concrete\Answer;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Group;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Question;
+use SamIT\LimeSurvey\JsonRpc\Concrete\SubQuestion;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Survey;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
 class Client
@@ -137,29 +140,233 @@ class Client
 
     public function getQuestions($surveyId, $groupId, $language) {
         $result = [];
-
         $subQuestions = [];
-        foreach ($this->listQuestions($surveyId, $groupId, $language) as $data) {
-            $question = new Question($this, [
-                'id' => (int)$data['qid'],
-                'text' => $data['question'],
-            ], [
-                'language' => $language,
-                'surveyId' => $surveyId
-            ]);
+        // First create parent questions.
+        $questions = $this->listQuestions($surveyId, $groupId, $language);
+        foreach ($questions as $data) {
+            $answers = [];
+
             if ($data['parent_qid'] == 0) {
-                $result[$question->getId()] = $question;
-            } else {
-                $subQuestions[(int) $data['parent_qid']][] = $question;
+
+                $answers = $this->getAnswersForData($data, $language, 0);
+
+                // Special handling for dual scale array question.
+                if ($data['type'] == '1') {
+                    $answers1 = $answers;
+                    $answers2 = $this->getAnswersForData($data, $language, 1);
+                    $answers = null;
+                } elseif ($data['type'] == 'R') {
+                    $answers1 = $answers;
+                    $answers = null;
+                }
+                $result[(int)$data['qid']] = $question = new Question($this, [
+                    'id' => $data['qid'],
+                    'text' => $data['question'],
+                    'title' => $data['title'],
+                ], [
+                    'language' => $language,
+                    'surveyId' => $surveyId,
+                    'answers' => $answers
+                ]);
+
+                // Special handling for array dual scale.
+                if ($data['type'] == '1') {
+
+                    new SubQuestion($this, [
+                        'id' => $data['qid'] . '-1',
+                        'text' => "Scale 1",
+                        'title' => "Scale 1"
+                    ], [
+                        'dimension' => 1,
+                        'answers' => $answers1,
+                        'parent' => $question
+                    ]);
+                    new SubQuestion($this, [
+                        'id' => (int) $data['qid'] . '-2',
+                        'text' => "Scale 2",
+                        'title' => "Scale 2",
+                    ], [
+                        'dimension' => 1,
+                        'answers' => $answers2,
+                        'parent' => $question
+                    ]);
+
+                } elseif ($data['type'] == 'R') {
+                    // Special handling for ranking.
+                    for($i = 1; $i <= count($answers1); $i++) {
+                        new SubQuestion($this, [
+                            'id' => (int) $data['qid'] . '-R' . $i,
+                            'text' => "Rank $i",
+                            'title' => "Rank $i",
+                        ], [
+                            'dimension' => 0,
+                            'answers' => $answers1,
+                            'parent' => $question
+                        ]);
+                    }
+
+                }
+           }
+        }
+
+        foreach($questions as $data) {
+            if ($data['parent_qid'] != 0) {
+
+                /** @var QuestionInterface $parent */
+                $parent = $result[$data['parent_qid']];
+                $sub = new SubQuestion($this, [
+                    'id' => (int) $data['qid'],
+                    'text' => $data['question'],
+                    'title' => $data['title'],
+                ], [
+                    'language' => $language,
+                    'surveyId' => $surveyId,
+                    'parent' => $parent,
+                    'dimension' => (int) $data['scale_id']
+                ]);
             }
         }
-        foreach($subQuestions as $parent => $children) {
-            $result[$parent]->setSubQuestions($children);
-        }
+
         return array_values($result);
     }
 
-
+    /**
+     * Gets the answers for question data provided by the limesurvey api.
+     * @param array $data
+     * @throws \Exception
+     */
+    private function getAnswersForData(array $data, $language, $scale = 0)
+    {
+        switch($data['type']) {
+            case 'E': // array increase same decrease
+                $answers = [
+                    new Answer($this, [
+                        'text' => 'Increase',
+                        'code' => 'I'
+                    ]),
+                    new Answer($this, [
+                        'text' => 'Same',
+                        'code' => 'S'
+                    ]),
+                    new Answer($this, [
+                        'text' => 'Decrease',
+                        'code' => 'D'
+                    ])
+                ];
+                break;
+            case 'B': // array 10pt choice
+                for ($i = 1; $i <= 10; $i++) {
+                    $answers[] = new Answer($this, [
+                        'text' => $i,
+                        'code' => $i
+                    ]);
+                }
+                break;
+            case 'A': // array 5pt choice.
+            case '5': // 5 point choice.
+                for ($i = 1; $i <= 5; $i++) {
+                    $answers[] = new Answer($this, [
+                        'text' => $i,
+                        'code' => $i
+                    ]);
+                }
+                break;
+            case '!': // List dropdown
+            case 'L': // List radio
+            case 'O': // List with comments.
+            case 'F': // Array
+            case 'H': // Array by column
+                foreach ($this->getQuestionProperties($data['qid'], ['answeroptions'], $language)['answeroptions'] as $key => $answerData) {
+                    $answers[] = new Answer($this, [
+                        'text' => $answerData['answer'],
+                        'code' => $key
+                    ]);
+                }
+                break;
+            case 'R': // Ranking
+            case '1': // Array dual scale
+                foreach ($this->getQuestionProperties($data['qid'], ['answeroptions'], $language)['answeroptions'] as $key => $answerData) {
+                    if ($scale == $answerData['scale_id']) {
+                        $answers[] = new Answer($this, [
+                            'text' => $answerData['answer'],
+                            'code' => $key
+                        ]);
+                    }
+                }
+                break;
+            case 'D': // Date Time
+            case '*': // Equation
+            case ':': // Array numbers
+            case '|': // File upload
+            case ';': // Array texts
+            case 'U': // Huge text
+            case 'T': // Long text
+            case 'K': // mULTIPLE Numerical
+            case 'N': // Numerical
+            case 'Q': // Multiple short texts
+            case 'X': // Text display
+                $answers = null;
+                break;
+            case 'G': // Gender
+                $answers = [
+                    new Answer($this, [
+                        'text' => 'Male',
+                        'code' => 'M'
+                    ]),
+                    new Answer($this, [
+                        'text' => 'Female',
+                        'code' => 'F'
+                    ])
+                ];
+                break;
+            case 'C': // array yes no uncertain
+                $answers = [
+                    new Answer($this, [
+                        'text' => 'Yes',
+                        'code' => 'Y'
+                    ]),
+                    new Answer($this, [
+                        'text' => 'No',
+                        'code' => 'N'
+                    ]),
+                    new Answer($this, [
+                        'text' => 'Uncertain',
+                        'code' => 'U'
+                    ])
+                ];
+                break;
+            case 'P': // Multiple choice with comments
+            case 'Y': // Yes / NO
+            case 'M': // Multiple choice
+                $answers = [
+                    new Answer($this, [
+                        'text' => 'Yes',
+                        'code' => 'Y'
+                    ]),
+                    new Answer($this, [
+                        'text' => 'No',
+                        'code' => 'N'
+                    ])
+                ];
+                break;
+            case 'I': // Language switch
+                $answers = [];
+                foreach (explode(' ', implode(' ', $this->getSurveyProperties($data['sid'], [
+                    'language',
+                    'additional_languages'
+                ], $language))) as $language) {
+                    $answers[] = new Answer($this, [
+                        'text' => $language,
+                        'code' => $language
+                    ]);
+                }
+                break;
+            default:
+                vdd($data);
+                $answers = null;
+        }
+        return $answers;
+    }
 
     /**
      * Create a new token.
@@ -211,6 +418,20 @@ class Client
             foreach ($data as $key => $value) {
                 $result[str_replace('surveyls_', '', $key)] = $value;
             }
+            $this->cacheSet($key, $result, 3600);
+        }
+        return $result;
+    }
+
+    public function getQuestionProperties($questionId, array $properties, $language = null)
+    {
+        $key = __CLASS__ . __FUNCTION__ . $questionId;
+        if (false === $result = $this->cacheGet($key)) {
+            $data = $this->executeRequest('get_question_properties', $questionId, $properties, $language);
+            if (isset($data['status'])) {
+                throw new \Exception($data['status']);
+            }
+            $result = $data;
             $this->cacheSet($key, $result, 3600);
         }
         return $result;
@@ -273,6 +494,9 @@ public function listGroups($surveyId)
     $key = __CLASS__ . __FUNCTION__ . (isset($user) ? $user : "");
     if (false === $result = $this->cacheGet($key)) {
         $result = $this->executeRequest('list_groups', $surveyId);
+        if (isset($result['status'])) {
+            return [];
+        }
         $this->cacheSet($key, $result, 3600);
     }
     return $result;
@@ -283,6 +507,9 @@ public function listQuestions($surveyId, $groupId, $language)
     $key = __CLASS__ . __FUNCTION__ . (isset($user) ? $user : "");
     if (false === $result = $this->cacheGet($key)) {
         $result = $this->executeRequest('list_questions', $surveyId, $groupId, $language);
+        if (isset($result['status'])) {
+            return [];
+        }
         $this->cacheSet($key, $result, 3600);
     }
     return $result;
