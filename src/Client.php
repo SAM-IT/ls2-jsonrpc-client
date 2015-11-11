@@ -16,8 +16,6 @@ class Client
      */
     protected $requestCache = array();
 
-    public $url;
-
     public $username;
 
     public $password;
@@ -563,12 +561,12 @@ public function listQuestions($surveyId, $groupId, $language)
 
     public function getAdminUrl()
     {
-        return str_replace('/remotecontrol', '', $this->url);
+        return str_replace('/remotecontrol', '', $this->client);
     }
 
-    public function getUrl($surveyId, array $params = null)
+    public function getUrl($surveyId, array $params = [])
     {
-        $baseUrl = str_replace('admin/remotecontrol', '', $this->url);
+        $baseUrl = str_replace('admin/remotecontrol', '', $this->client->getUrl());
         $url = $baseUrl . "survey/index/sid/$surveyId";
         if (isset($params['lang'])) {
             $params['lang'] = $this->normalizeLanguage($params['lang']);
