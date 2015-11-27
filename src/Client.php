@@ -1,13 +1,17 @@
 <?php
 namespace SamIT\LimeSurvey\JsonRpc;
 
+use SamIT\LimeSurvey\Interfaces\ResponseInterface;
 use SamIT\LimeSurvey\Interfaces\QuestionInterface;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Answer;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Group;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Question;
+use SamIT\LimeSurvey\JsonRpc\Concrete\Response;
 use SamIT\LimeSurvey\JsonRpc\Concrete\SubQuestion;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Survey;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
+use yii\helpers\ArrayHelper;
+
 class Client
 {
     /**
@@ -111,9 +115,9 @@ class Client
             $data['languages'] = explode(' ', $data2['additional_languages']);
         }
         $data['languages'][] = $data2['language'];
-
+        $data['language'] = $data2['language'];
         return new Survey($this, $data, [
-            'language' => $language
+            'language' => $data2['language']
         ]);
     }
 
@@ -303,6 +307,7 @@ class Client
             case 'N': // Numerical
             case 'Q': // Multiple short texts
             case 'X': // Text display
+            case 'S': // Short text
                 $answers = null;
                 break;
             case 'G': // Gender
@@ -372,12 +377,16 @@ class Client
      * @param array $participantData Key - value array for the token information.
      * @param boolean $createToken If false: don't create a token. This is automatically set to false if a token is supplied
      * in the $participantData array.
-     * @return mixed
+     * @return array|null The created token, or null if creation failed.
      */
     public function createToken($surveyId, array $tokenData, $generateToken = true)
     {
         $generateToken = $generateToken && !isset($tokenData['token']);
-        return $this->executeRequest('add_participants', $surveyId, array($tokenData), $generateToken);
+        $data = $this->executeRequest('add_participants', $surveyId, array($tokenData), $generateToken);
+        if (isset($data['errors'])) {
+            return null;
+        }
+        return $data;
     }
 
 
@@ -540,9 +549,24 @@ public function listQuestions($surveyId, $groupId, $language)
         }
     }
 
-    public function getResponses($surveyId)
+    /**
+     * @param int $surveyId
+     * @param int|null $limit
+     * @param int|null $offset
+     * @return ResponseInterface[]
+     */
+    public function getResponses($surveyId, $limit = null, $offset = null)
     {
-            return $this->executeRequest('export_responses', $surveyId, 'json');
+        $result = json_decode(base64_decode($this->executeRequest('export_responses', $surveyId, 'json', null, 'all', 'code', 'short', $offset, $limit)), true);
+        $responses = [];
+        if (is_array($result) && isset($result['responses'])) {
+            foreach($result['responses'] as $responseData) {
+                $responses[] = new Response($this, array_pop($responseData), [
+                    'surveyId' => intval($surveyId)
+                ]);
+            }
+        }
+        return $responses;
     }
 
     public function getTitle($surveyId)
@@ -587,4 +611,40 @@ public function listQuestions($surveyId, $groupId, $language)
         return $language;
     }
 
+
+    /**
+     * @param int $surveyId The survey ID
+     * @param string $token The token
+     * @param int $attributeCount An upper bound for the custom attributes (we request them blindly, larger number cause larger requests).
+     * @return array
+     */
+    public function getToken($surveyId, $token, $attributeCount = 20)
+    {
+        $attributes = [
+            'emailstatus',
+            'token',
+            'language',
+            'sent',
+            'completed',
+            'usesleft',
+            'validfrom',
+            'validuntil'
+        ];
+        for ($i = 1; $i < $attributeCount; $i++) {
+            $attributes[] = 'attribute_' . $i;
+        }
+        $data = $this->executeRequest('list_participants', $surveyId, 0, 1, true, $attributes, [
+            'token' => $token
+        ]);
+        $result = [];
+        foreach($data[0] as $key => $value) {
+            if (is_array($value)) {
+                $result = array_merge($result, $value);
+            } else {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
+    }
 }

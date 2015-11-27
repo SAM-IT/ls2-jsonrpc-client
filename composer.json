@@ -11,6 +11,9 @@
     "require": {
         "sam-it/ls-interfaces": "^0.3.0"
     },
+    "suggest" : {
+        "nestbot/carbon" : "To get dates and times as objects that implement __toString()"
+    },
     "autoload": {
         "psr-4": {
             "SamIT\\LimeSurvey\\JsonRpc\\" : [

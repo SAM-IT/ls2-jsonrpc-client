@@ -7,9 +7,16 @@ namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 use SamIT\LimeSurvey\Interfaces\GroupInterface;
 use SamIT\LimeSurvey\Interfaces\LocaleAwareInterface;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
+use SamIT\LimeSurvey\JsonRpc\Client;
+use SamIT\LimeSurvey\JsonRpc\SerializeHelper;
 
-class Survey extends Base implements SurveyInterface, LocaleAwareInterface
+class Survey extends Base implements SurveyInterface, LocaleAwareInterface, \JsonSerializable
 {
+    public function __construct(Client $client, array $attributes, array $properties)
+    {
+        parent::__construct($client, $attributes, $properties);
+    }
+
 
     /**
      * @return int The unique ID for this survey.
@@ -44,7 +51,7 @@ class Survey extends Base implements SurveyInterface, LocaleAwareInterface
     }
 
     /**
-     * @return array Languages in which the survey is available
+     * @return string[] Languages in which the survey is available
      */
     public function getLanguages()
     {
@@ -75,4 +82,11 @@ class Survey extends Base implements SurveyInterface, LocaleAwareInterface
     {
         return $this->client->getSurvey($this->getId(), $language);
     }
+
+    public function jsonSerialize()
+    {
+        return SerializeHelper::toArray($this);
+    }
+
+
 }
