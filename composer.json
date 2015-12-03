@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "sam-it/ls-interfaces": "^0.3.0"
+        "sam-it/ls-interfaces": "^0.3.5"
     },
     "suggest" : {
         "nestbot/carbon" : "To get dates and times as objects that implement __toString()"

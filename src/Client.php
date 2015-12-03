@@ -60,6 +60,8 @@ class Client
             $response = $this->client->get_session_key($this->username, $this->password);
             if (is_string($response)) {
                 $this->sessionKey = $response;
+                // Unset the password as soon as we have a session key.
+                unset($this->password);
             }
         }
 
@@ -81,10 +83,11 @@ class Client
         $params[0] = $this->getSessionKey();
         $key = "LimeSurvey" . $function . md5(json_encode(func_get_args()));
         if (!array_key_exists($key, $this->requestCache)) {
+//            echo "<pre>Calling $function with params: " . print_r($params, true) . "</pre>";
             $this->requestCache[$key] = call_user_func_array(array($this->client, $function), $params);
         }
         /**
-         * @todo remove this when limesurvey api starts sending proper error codes.
+         * @todo remove this when limeSurvey api starts sending proper error codes.
          */
         if (isset($this->requestCache[$key]['status']) && $this->requestCache[$key]['status'] == "Invalid session key")
         {
@@ -115,9 +118,11 @@ class Client
             $data['languages'] = explode(' ', $data2['additional_languages']);
         }
         $data['languages'][] = $data2['language'];
+
         $data['language'] = $data2['language'];
+
         return new Survey($this, $data, [
-            'language' => $data2['language']
+            'language' => in_array($language, $data['languages']) ? $language : $data2['language']
         ]);
     }
 
@@ -144,7 +149,9 @@ class Client
         $result = [];
         $subQuestions = [];
         // First create parent questions.
-        $questions = $this->listQuestions($surveyId, $groupId, $language);
+        $questions = array_filter($this->listQuestions($surveyId, null, $language), function ($question) use ($groupId) {
+            return $question['gid'] == $groupId;
+        });
         foreach ($questions as $data) {
             $answers = [];
 
@@ -233,7 +240,7 @@ class Client
     }
 
     /**
-     * Gets the answers for question data provided by the limesurvey api.
+     * Gets the answers for question data provided by the limeSurvey api.
      * @param array $data
      * @throws \Exception
      */
@@ -410,7 +417,7 @@ class Client
 
     public function getLanguageProperties($surveyId, array $properties, $language = null)
     {
-        $key = __CLASS__ . __FUNCTION__ . $surveyId;
+        $key = __CLASS__ . __FUNCTION__ . serialize(func_get_args());
         foreach($properties as &$property) {
             if (strpos($property, 'surveyls_') !== 0) {
                 $property = "surveyls_$property";
@@ -418,6 +425,7 @@ class Client
         }
         if (false === $result = $this->cacheGet($key)) {
             $data = $this->executeRequest('get_language_properties', $surveyId, $properties, $language);
+
             if (isset($data['status'])) {
                 throw new \Exception($data['status']);
             }
@@ -425,6 +433,7 @@ class Client
             foreach ($data as $key => $value) {
                 $result[str_replace('surveyls_', '', $key)] = $value;
             }
+
             $this->cacheSet($key, $result, 3600);
         }
         return $result;
@@ -511,7 +520,7 @@ public function listGroups($surveyId)
 
 public function listQuestions($surveyId, $groupId, $language)
 {
-    $key = __CLASS__ . __FUNCTION__ . (isset($user) ? $user : "");
+    $key = __CLASS__ . __FUNCTION__ . serialize(func_get_args());
     if (false === $result = $this->cacheGet($key)) {
         $result = $this->executeRequest('list_questions', $surveyId, $groupId, $language);
         if (isset($result['status'])) {
@@ -645,6 +654,16 @@ public function listQuestions($surveyId, $groupId, $language)
             }
         }
 
+        $result['surveyId'] = $surveyId;
+        $result['tokenId'] = $result['tid'];
+        unset($result['tid']);
+
         return $result;
+    }
+
+    public function updateToken($surveyId, $tokenId, $attributes)
+    {
+        $result = $this->executeRequest('set_participant_properties', $surveyId, $tokenId, $attributes);
+        vdd($result);
     }
 }
