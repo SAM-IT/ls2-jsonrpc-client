@@ -3,6 +3,8 @@ namespace SamIT\LimeSurvey\JsonRpc;
 
 use SamIT\LimeSurvey\Interfaces\ResponseInterface;
 use SamIT\LimeSurvey\Interfaces\QuestionInterface;
+use SamIT\LimeSurvey\Interfaces\TokenInterface;
+use SamIT\LimeSurvey\Interfaces\WritableTokenInterface;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Answer;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Group;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Question;
@@ -10,6 +12,7 @@ use SamIT\LimeSurvey\JsonRpc\Concrete\Response;
 use SamIT\LimeSurvey\JsonRpc\Concrete\SubQuestion;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Survey;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
+use SamIT\LimeSurvey\JsonRpc\Concrete\Token;
 use yii\helpers\ArrayHelper;
 
 class Client
@@ -71,6 +74,9 @@ class Client
         return $this->sessionKey;
     }
 
+    protected function getCacheKey($function, array $args) {
+        return  "LimeSurvey" . $function . md5(json_encode($args));
+    }
     /**
      * Send a request using JsonRPC
      * @param $function
@@ -81,7 +87,7 @@ class Client
     {
         $params = func_get_args();
         $params[0] = $this->getSessionKey();
-        $key = "LimeSurvey" . $function . md5(json_encode(func_get_args()));
+        $key = $this->getCacheKey($function, func_get_args());
         if (!array_key_exists($key, $this->requestCache)) {
 //            echo "<pre>Calling $function with params: " . print_r($params, true) . "</pre>";
             $this->requestCache[$key] = call_user_func_array(array($this->client, $function), $params);
@@ -625,7 +631,7 @@ public function listQuestions($surveyId, $groupId, $language)
      * @param int $surveyId The survey ID
      * @param string $token The token
      * @param int $attributeCount An upper bound for the custom attributes (we request them blindly, larger number cause larger requests).
-     * @return array
+     * @return WritableTokenInterface
      */
     public function getToken($surveyId, $token, $attributeCount = 20)
     {
@@ -637,7 +643,9 @@ public function listQuestions($surveyId, $groupId, $language)
             'completed',
             'usesleft',
             'validfrom',
-            'validuntil'
+            'validuntil',
+            'remindersent',
+            'remindercount'
         ];
         for ($i = 1; $i < $attributeCount; $i++) {
             $attributes[] = 'attribute_' . $i;
@@ -645,25 +653,66 @@ public function listQuestions($surveyId, $groupId, $language)
         $data = $this->executeRequest('list_participants', $surveyId, 0, 1, true, $attributes, [
             'token' => $token
         ]);
+        $descriptions = $this->getTokenAttributeDescriptions($surveyId);
         $result = [];
         foreach($data[0] as $key => $value) {
             if (is_array($value)) {
                 $result = array_merge($result, $value);
+            } elseif (isset($descriptions[$key])) {
+                $result['custom'][$descriptions[$key]['description']] = $value;
             } else {
                 $result[$key] = $value;
             }
         }
 
-        $result['surveyId'] = $surveyId;
-        $result['tokenId'] = $result['tid'];
-        unset($result['tid']);
+        return new Token($this, $result, [
+            'surveyId' => $surveyId
+        ]);
 
-        return $result;
     }
 
-    public function updateToken($surveyId, $tokenId, $attributes)
+    /**
+     * Updates the specified token using $attributes.
+     * Will translate custom attributes to attribute_x, will ignore extra keys.
+     * @param int $surveyId
+     * @param int $tokenId
+     * @param aray $attributes
+     */
+    public function updateToken($surveyId, $tokenId, array $attributes)
     {
-        $result = $this->executeRequest('set_participant_properties', $surveyId, $tokenId, $attributes);
-        vdd($result);
+        $map = array_flip(ArrayHelper::getColumn($this->getTokenAttributeDescriptions($surveyId), 'description'));
+
+        $translated = [];
+        foreach($attributes as $key => $value) {
+            if (isset($map[$key])) {
+                $translated[$map[$key]] = $value;
+            } else {
+                $translated[$key] = $value;
+            }
+        }
+
+
+        $result = $this->executeRequest('set_participant_properties', $surveyId, $tokenId, $translated);
+        // Clear any list_participants calls from the request cache.
+        foreach($this->requestCache as $key => $value) {
+            if (strpos($key, 'list_participants') !== false) {
+                unset($this->requestCache[$key]);
+            }
+        }
+        return !isset($result['status']);
+    }
+
+    public function getTokenAttributeDescriptions($surveyId)
+    {
+        $ad = $this->getSurveyProperties($surveyId, [
+            'attributedescriptions'
+        ])['attributedescriptions'];
+
+        // Try json_decode first.
+        if (null === $descriptions = json_decode($ad, true)) {
+            throw new \Exception("This survey seems to store token attributes using PHP serialize. This is insecure and therefore not supported. Please update any of the custom tokens to have LimeSurvey automatically save it in the new format.");
+        }
+        return $descriptions;
+
     }
 }

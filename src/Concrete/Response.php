@@ -31,18 +31,11 @@ class Response extends Base implements ResponseInterface
     }
 
     /**
-     * @return \DateTimeImmutable
+     * @return \DateTimeInterface
      */
     public function getSubmitDate()
     {
-        // Optionally use Carbon, if it is available.
-        if (class_exists(Carbon::class)) {
-            $class = Carbon::class;
-        } else {
-            $class = \DateTimeImmutable::class;
-        }
-
-        return new $class($this->attributes['submitdate']);
+        return $this->constructDateTimeInterface($this->attributes['submitdate']);
     }
 
     /**

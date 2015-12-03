@@ -4,6 +4,7 @@
 namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
 
+use Carbon\Carbon;
 use SamIT\LimeSurvey\JsonRpc\Client;
 
 class Base
@@ -31,6 +32,25 @@ class Base
     }
 
     /**
+     * @param string $value The current time.
+     * @return \DateTimeInterface | null
+     */
+    protected function constructDateTimeInterface($value)
+    {
+        // A valid date time will contain at the very least 8 characters.
+        if (empty($value) || strlen($value) < 8) {
+            return null;
+        }
+        // Optionally use Carbon, if it is available.
+        if (class_exists(Carbon::class)) {
+            $class = Carbon::class;
+        } else {
+            $class = \DateTimeImmutable::class;
+        }
+
+        return new $class($value);
+    }
+    /**
      * Specify data which should be serialized to JSON
      * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
      * @return mixed data which can be serialized by <b>json_encode</b>,
@@ -53,4 +73,14 @@ class Base
 //        }
 //        return $result;
 //    }
+
+
+    public function __debugInfo()
+    {
+        $array = (array) $this;
+        unset($array["\0*\0client"]);
+        return $array;
+    }
+
+
 }
