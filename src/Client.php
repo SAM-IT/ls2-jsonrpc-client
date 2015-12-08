@@ -549,19 +549,26 @@ public function listQuestions($surveyId, $groupId, $language)
 }
 
 
-
-    public function getResponseByToken($surveyId, $token)
+    /**
+     * @param int $surveyId
+     * @param int|null $limit
+     * @param int|null $offset
+     * @return ResponseInterface[]
+     */
+    public function getResponsesByToken($surveyId, $token)
     {
-        $jsonResponse = $this->executeRequest('export_responses_by_token', $surveyId, 'json', $token);
-        if (is_array($jsonResponse))
-        {
-            return $jsonResponse;
+        $data = $this->executeRequest('export_responses_by_token', $surveyId, 'json', $token);
+        $responses = [];
+        if (is_string($data)) {
+
+            foreach(json_decode(base64_decode($data), true)['responses'] as $responseData) {
+                $responses[] = new Response($this, array_pop($responseData), [
+                    'surveyId' => intval($surveyId)
+                ]);
+            }
+
         }
-        else
-        {
-            $result = json_decode(base64_decode($jsonResponse), 'assoc');
-            return reset($result['responses'][0]);
-        }
+        return $responses;
     }
 
     /**
@@ -631,7 +638,7 @@ public function listQuestions($surveyId, $groupId, $language)
      * @param int $surveyId The survey ID
      * @param string $token The token
      * @param int $attributeCount An upper bound for the custom attributes (we request them blindly, larger number cause larger requests).
-     * @return WritableTokenInterface
+     * @return WritableTokenInterface|null
      */
     public function getToken($surveyId, $token, $attributeCount = 20)
     {
@@ -655,19 +662,21 @@ public function listQuestions($surveyId, $groupId, $language)
         ]);
         $descriptions = $this->getTokenAttributeDescriptions($surveyId);
         $result = [];
-        foreach($data[0] as $key => $value) {
-            if (is_array($value)) {
-                $result = array_merge($result, $value);
-            } elseif (isset($descriptions[$key])) {
-                $result['custom'][$descriptions[$key]['description']] = $value;
-            } else {
-                $result[$key] = $value;
+        if (isset($data[0])) {
+            foreach ($data[0] as $key => $value) {
+                if (is_array($value)) {
+                    $result = array_merge($result, $value);
+                } elseif (isset($descriptions[$key])) {
+                    $result['custom'][$descriptions[$key]['description']] = $value;
+                } else {
+                    $result[$key] = $value;
+                }
             }
-        }
 
-        return new Token($this, $result, [
-            'surveyId' => $surveyId
-        ]);
+            return new Token($this, $result, [
+                'surveyId' => $surveyId
+            ]);
+        }
 
     }
 
@@ -710,7 +719,7 @@ public function listQuestions($surveyId, $groupId, $language)
 
         // Try json_decode first.
         if (null === $descriptions = json_decode($ad, true)) {
-            throw new \Exception("This survey seems to store token attributes using PHP serialize. This is insecure and therefore not supported. Please update any of the custom tokens to have LimeSurvey automatically save it in the new format.");
+            throw new \Exception("This survey seems to store token attributes using PHP serialize. This is insecure and therefore not supported. Please update any of the custom token fields / attributes to have LimeSurvey automatically save it in the new format.");
         }
         return $descriptions;
 
