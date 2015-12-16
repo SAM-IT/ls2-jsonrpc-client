@@ -643,8 +643,6 @@ public function listQuestions($surveyId, $groupId, $language)
     public function getToken($surveyId, $token, $attributeCount = 20)
     {
         $tokens = $this->getTokens($surveyId, ['token' => $token], $attributeCount, 1);
-        vd($token);
-        vdd($tokens);
         if (!empty($tokens)) {
             return $tokens[0];
         }
