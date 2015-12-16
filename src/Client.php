@@ -643,6 +643,8 @@ public function listQuestions($surveyId, $groupId, $language)
     public function getToken($surveyId, $token, $attributeCount = 20)
     {
         $tokens = $this->getTokens($surveyId, ['token' => $token], $attributeCount, 1);
+        vd($token);
+        vdd($tokens);
         if (!empty($tokens)) {
             return $tokens[0];
         }
@@ -666,7 +668,7 @@ public function listQuestions($surveyId, $groupId, $language)
         for ($i = 1; $i < $attributeCount; $i++) {
             $attributes[] = 'attribute_' . $i;
         }
-        $data = $this->executeRequest('list_participants', $surveyId, 0, $limit, true, $attributes);
+        $data = $this->executeRequest('list_participants', $surveyId, 0, $limit, true, $attributes, $attributesConditions);
         $descriptions = $this->getTokenAttributeDescriptions($surveyId);
         $result = [];
         if (isset($data[0])) {
