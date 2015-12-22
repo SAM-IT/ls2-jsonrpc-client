@@ -52,4 +52,12 @@ class Group extends Base implements GroupInterface
     {
         return $this->language;
     }
+
+    /**
+     * @return int The index of this question.
+     */
+    public function getIndex()
+    {
+        return $this->attributes['index'];
+    }
 }

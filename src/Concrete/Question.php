@@ -92,4 +92,12 @@ class Question extends Base implements QuestionInterface
     {
         return count($this->subQuestions);
     }
+
+    /**
+     * @return int The index of this question.
+     */
+    public function getIndex()
+    {
+        return $this->attributes['index'];
+    }
 }
