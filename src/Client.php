@@ -192,6 +192,7 @@ class Client
 
                     new SubQuestion($this, [
                         'id' => $data['qid'] . '-1',
+                        'index' => 0,
                         'text' => "Scale 1",
                         'title' => "Scale 1"
                     ], [
@@ -201,6 +202,7 @@ class Client
                     ]);
                     new SubQuestion($this, [
                         'id' => (int) $data['qid'] . '-2',
+                        'index' => 1,
                         'text' => "Scale 2",
                         'title' => "Scale 2",
                     ], [
@@ -215,7 +217,8 @@ class Client
                         new SubQuestion($this, [
                             'id' => (int) $data['qid'] . '-R' . $i,
                             'text' => "Rank $i",
-                            'title' => "Rank $i",
+                            'index' => $data['question_order'],
+                            'title' => "{$question->getTitle()}_$i",
                         ], [
                             'dimension' => 0,
                             'answers' => $answers1,
@@ -235,6 +238,7 @@ class Client
                 $sub = new SubQuestion($this, [
                     'id' => (int) $data['qid'],
                     'text' => $data['question'],
+                    'index' => $data['question_order'],
                     'title' => $data['title'],
                 ], [
                     'language' => $language,
@@ -669,7 +673,7 @@ public function listQuestions($surveyId, $groupId, $language)
         for ($i = 1; $i < $attributeCount; $i++) {
             $attributes[] = 'attribute_' . $i;
         }
-        $data = $this->executeRequest('list_participants', $surveyId, 0, $limit, true, $attributes, $attributesConditions);
+        $data = $this->executeRequest('list_participants', $surveyId, 0, $limit, false, $attributes, $attributesConditions);
         $descriptions = $this->getTokenAttributeDescriptions($surveyId);
         $result = [];
         if (isset($data[0])) {
