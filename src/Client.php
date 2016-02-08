@@ -1,6 +1,7 @@
 <?php
 namespace SamIT\LimeSurvey\JsonRpc;
 
+use Befound\Exceptions\Exception;
 use SamIT\LimeSurvey\Interfaces\ResponseInterface;
 use SamIT\LimeSurvey\Interfaces\QuestionInterface;
 use SamIT\LimeSurvey\Interfaces\TokenInterface;
@@ -509,9 +510,9 @@ class Client
                     return array();
                 }
             }
-            catch (Exception $e)
+            catch (\Exception $e)
             {
-                return array();
+                return [];
             }
             return $result;
         }
@@ -586,7 +587,11 @@ public function listQuestions($surveyId, $groupId, $language)
      */
     public function getResponses($surveyId, $limit = null, $offset = null)
     {
-        $result = json_decode(base64_decode($this->executeRequest('export_responses', $surveyId, 'json', null, 'all', 'code', 'short', $offset, $limit)), true);
+        $response = $this->executeRequest('export_responses', $surveyId, 'json', null, 'all', 'code', 'short', $offset, $limit);
+        if ($response == ['status' => 'No permission']) {
+            return [];
+        }
+        $result = json_decode(base64_decode($response), true);
         $responses = [];
         if (is_array($result) && isset($result['responses'])) {
             foreach($result['responses'] as $responseData) {
