@@ -130,7 +130,7 @@ class Token extends Base implements WritableTokenInterface
      */
     public function getCustomAttributes()
     {
-        return $this->attributes['custom'];
+        return isset($this->attributes['custom']) ? $this->attributes['custom'] : [];
     }
 
     public function save()
