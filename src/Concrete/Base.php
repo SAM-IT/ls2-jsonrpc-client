@@ -38,7 +38,11 @@ class Base
     protected function constructDateTimeInterface($value)
     {
         // A valid date time will contain at the very least 8 characters.
-        if (empty($value) || strlen($value) < 8) {
+        if (empty($value)
+            || strlen($value) < 8
+            // And contains at least one non zero digit.
+            || !preg_match('/[1-9]/', $value)
+        ) {
             return null;
         }
         // Optionally use Carbon, if it is available.
