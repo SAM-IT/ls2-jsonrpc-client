@@ -136,7 +136,7 @@ class Token extends Base implements WritableTokenInterface
     public function save()
     {
         // Save the token attributes.
-        return $this->client->updateToken($this->surveyId, $this->getId(), array_merge($this->attributes, $this->attributes['custom']));
+        return $this->client->updateToken($this->surveyId, $this->getId(), array_merge($this->attributes, $this->getCustomAttributes()));
     }
 
     /**
