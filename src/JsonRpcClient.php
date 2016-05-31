@@ -173,7 +173,8 @@ class JsonRpcClient
             }
             if(isset($response['error']) && !is_null($response['error']))
             {
-                throw new \Exception('Request error: ' . $response['error']['message']);
+                $error = is_string($response['error']) ? $response['error'] : $response['error']['message'];
+                throw new \Exception('Request error: ' . $error);
             }
 
             return $response['result'];
