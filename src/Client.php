@@ -398,16 +398,18 @@ class Client
      * @param array $participantData Key - value array for the token information.
      * @param boolean $createToken If false: don't create a token. This is automatically set to false if a token is supplied
      * in the $participantData array.
-     * @return array|null The created token, or null if creation failed.
+     * @return WritableTokenInterface $token
      */
     public function createToken($surveyId, array $tokenData, $generateToken = true)
     {
         $generateToken = $generateToken && !isset($tokenData['token']);
         $data = $this->executeRequest('add_participants', $surveyId, array($tokenData), $generateToken);
         if (isset($data['errors'])) {
-            return null;
+            throw new \RuntimeException("Failed to create token: " . $data['errors']);
+        } elseif (isset($data['status']) && $data['status'] == 'No token table') {
+            throw new \RuntimeException("Failed to create token: no token table.");
         }
-        return $data;
+        return $this->getToken($surveyId, $data[0]['token']);
     }
 
 
@@ -650,7 +652,7 @@ public function listQuestions($surveyId, $groupId, $language)
      * @param int $surveyId The survey ID
      * @param string $token The token
      * @param int $attributeCount An upper bound for the custom attributes (we request them blindly, larger number cause larger requests).
-     * @return WritableTokenInterface|null
+     * @return WritableTokenInterface
      */
     public function getToken($surveyId, $token, $attributeCount = 20)
     {
@@ -658,6 +660,7 @@ public function listQuestions($surveyId, $groupId, $language)
         if (!empty($tokens)) {
             return $tokens[0];
         }
+        throw new \Exception('Token not found.');
 
     }
 

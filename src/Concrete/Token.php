@@ -4,6 +4,7 @@
 namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
 
+use Befound\Components\DateTime;
 use SamIT\LimeSurvey\Interfaces\WritableTokenInterface;
 
 class Token extends Base implements WritableTokenInterface
@@ -136,7 +137,12 @@ class Token extends Base implements WritableTokenInterface
     public function save()
     {
         // Save the token attributes.
-        return $this->client->updateToken($this->surveyId, $this->getId(), array_merge($this->attributes, $this->getCustomAttributes()));
+        return $this->client->updateToken($this->surveyId, $this->getId(), array_map(function($value) {
+            if ($value instanceof \DateTimeInterface) {
+                return $value->format('Y-m-d H:i:s');
+            }
+
+        }, array_merge($this->attributes, $this->getCustomAttributes())));
     }
 
     /**
