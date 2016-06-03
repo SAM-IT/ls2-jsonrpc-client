@@ -90,7 +90,6 @@ class Client
         $params[0] = $this->getSessionKey();
         $key = $this->getCacheKey($function, func_get_args());
         if (!array_key_exists($key, $this->requestCache)) {
-//            echo "<pre>Calling $function with params: " . print_r($params, true) . "</pre>";
             $this->requestCache[$key] = call_user_func_array(array($this->client, $function), $params);
         }
         /**
@@ -160,9 +159,8 @@ class Client
         $questions = array_filter($this->listQuestions($surveyId, null, $language), function ($question) use ($groupId) {
             return $question['gid'] == $groupId;
         });
-        foreach ($questions as $data) {
-            $answers = [];
 
+        foreach ($questions as $data) {
             if ($data['parent_qid'] == 0) {
 
                 $answers = $this->getAnswersForData($data, $language, 0);
@@ -236,7 +234,7 @@ class Client
 
                 /** @var QuestionInterface $parent */
                 $parent = $result[$data['parent_qid']];
-                $sub = new SubQuestion($this, [
+                new SubQuestion($this, [
                     'id' => (int) $data['qid'],
                     'text' => $data['question'],
                     'index' => $data['question_order'],
@@ -247,6 +245,22 @@ class Client
                     'parent' => $parent,
                     'dimension' => (int) $data['scale_id']
                 ]);
+                // Multiple choice with commment, add comment question.
+                if ($data['type'] == 'P') {
+                    new SubQuestion($this, [
+                        'id' => $data['qid'] . 'comment',
+                        'text' => "Comment for: " . $data['question'],
+                        'index' => $data['question_order'],
+                        'title' => $data['title']  . 'comment',
+                    ], [
+                        'language' => $language,
+                        'surveyId' => $surveyId,
+                        'parent' => $parent,
+                        'dimension' => 11
+                    ]);
+                }
+
+
             }
         }
 
@@ -303,6 +317,12 @@ class Client
                     $answers[] = new Answer($this, [
                         'text' => $answerData['answer'],
                         'code' => $key
+                    ]);
+                }
+                if (isset($data['other']) && $data['other'] === 'Y') {
+                    $answers[] = new Answer($this, [
+                        'text' => 'Other',
+                        'code' => '-oth-'
                     ]);
                 }
                 break;
@@ -386,7 +406,6 @@ class Client
                 }
                 break;
             default:
-                vdd($data);
                 $answers = null;
         }
         return $answers;

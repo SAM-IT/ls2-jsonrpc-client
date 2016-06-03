@@ -36,7 +36,7 @@ class Question extends Base implements QuestionInterface
     }
 
     /**
-     * @int $dimension
+     * @param int $dimension
      * @return QuestionInterface[]
      */
     public function getQuestions($dimension)
@@ -47,6 +47,35 @@ class Question extends Base implements QuestionInterface
             return $result;
         }, $this->subQuestions[$dimension]);
 
+    }
+
+    /**
+     * @param string $code The code / title of the question.
+     * @param int $limitDimension Only search the given dimension.
+     * @return QuestionInterface|null The question if found.
+     */
+    public function getQuestionByCode($code, $limitDimension = null)
+    {
+        if (isset($limitDimension)) {
+            foreach($this->subQuestions[$limitDimension] as $subQuestion) {
+                if ($subQuestion->getTitle() === $code) {
+                    $result = clone $subQuestion;
+                    $result->depth = $this->depth + 1;
+                    return $result;
+                }
+            }
+        } else {
+            foreach ($this->subQuestions as $dimension => $subQuestions) {
+                foreach($subQuestions as $subQuestion) {
+                    if ($subQuestion->getTitle() === $code) {
+                        $result = clone $subQuestion;
+                        $result->depth = $this->depth + 1;
+
+                        return $result;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -66,7 +95,7 @@ class Question extends Base implements QuestionInterface
     }
 
     /**
-     * @return AnswerInterface
+     * @return AnswerInterface[]
      */
     public function getAnswers()
     {

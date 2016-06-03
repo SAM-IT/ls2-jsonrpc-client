@@ -12,6 +12,11 @@ use SamIT\LimeSurvey\JsonRpc\SerializeHelper;
 
 class Survey extends Base implements SurveyInterface, LocaleAwareInterface, \JsonSerializable
 {
+    /**
+     * @var GroupInterface[]
+     */
+    private $groups;
+
     public function __construct(Client $client, array $attributes, array $properties)
     {
         parent::__construct($client, $attributes, $properties);
@@ -31,7 +36,24 @@ class Survey extends Base implements SurveyInterface, LocaleAwareInterface, \Jso
      */
     public function getGroups()
     {
-        return $this->client->getGroups($this->getId(), $this->getLanguage());
+        if (!isset($this->groups)) {
+            $this->groups = $this->client->getGroups($this->getId(), $this->getLanguage());
+        }
+        return $this->groups;
+    }
+
+    /**
+     * @param string $code The code / title of the question.
+     * @return Question|null The question if found.
+     */
+    public function getQuestionByCode($code)
+    {
+        /** @var Group $group */
+        foreach($this->getGroups() as $group) {
+            if (null !== $result = $group->getQuestionByCode($code)) {
+                return $result;
+            }
+        }
     }
 
     /**

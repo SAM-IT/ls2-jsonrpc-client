@@ -10,6 +10,10 @@ use SamIT\LimeSurvey\Interfaces\QuestionInterface;
 
 class Group extends Base implements GroupInterface
 {
+    /**
+     * @var QuestionInterface[]
+     */
+    private $questions;
 
     protected $language;
     protected $surveyId;
@@ -26,7 +30,23 @@ class Group extends Base implements GroupInterface
      */
     public function getQuestions()
     {
-        return $this->client->getQuestions($this->surveyId, $this->getId(), $this->getLanguage());
+        if (!isset($this->questions)) {
+            /** @var QuestionInterface $question */
+            foreach ($this->client->getQuestions($this->surveyId, $this->getId(), $this->getLanguage()) as $question) {
+                $this->questions[$question->getTitle()] = $question;
+            }
+        }
+        return $this->questions;
+    }
+
+    /**
+     * @param string $code The code / title of the question.
+     * @return QuestionInterface|null The question if found.
+     */
+    public function getQuestionByCode($code)
+    {
+        $this->getQuestions();
+        return isset($this->questions[$code]) ? $this->questions[$code] : null;
     }
 
     /**
