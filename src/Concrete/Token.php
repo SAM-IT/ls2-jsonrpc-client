@@ -141,7 +141,7 @@ class Token extends Base implements WritableTokenInterface
             if ($value instanceof \DateTimeInterface) {
                 return $value->format('Y-m-d H:i:s');
             }
-
+            return $value;
         }, array_merge($this->attributes, $this->getCustomAttributes())));
     }
 
