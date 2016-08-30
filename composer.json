@@ -12,7 +12,7 @@
         "sam-it/ls-interfaces": "^0.5.0"
     },
     "suggest" : {
-        "nestbot/carbon" : "To get dates and times as objects that implement __toString()"
+        "nesbot/carbon" : "To get dates and times as objects that implement __toString()"
     },
     "autoload": {
         "psr-4": {
