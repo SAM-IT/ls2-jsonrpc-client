@@ -140,7 +140,7 @@ class Client
                 $result[] = new Group($this, [
                     'id' => (int)$data['gid'],
                     'title' => $data['group_name'],
-                    'index' => $data['group_order'],
+                    'index' => (int)$data['group_order'],
                     'description'=> $data['description']
                 ], [
                     'language'=> $language,
@@ -179,7 +179,7 @@ class Client
                     'id' => $data['qid'],
                     'text' => $data['question'],
                     'title' => $data['title'],
-                    'index' => $data['question_order']
+                    'index' => (int)$data['question_order']
                 ], [
                     'language' => $language,
                     'surveyId' => $surveyId,
