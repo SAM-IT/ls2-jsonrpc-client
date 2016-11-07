@@ -98,7 +98,7 @@ class Survey extends Base implements SurveyInterface, LocaleAwareInterface, \Jso
 
     /**
      * @param string $language
-     * @return self A copy of the object localized to the current locale.
+     * @return SurveyInterface A copy of the object localized to the current locale.
      */
     public function getLocalized($language)
     {

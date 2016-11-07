@@ -4,6 +4,7 @@
 namespace SamIT\LimeSurvey\JsonRpc;
 
 
+use SamIT\LimeSurvey\Interfaces\LocaleAwareInterface;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Question;
 
@@ -54,13 +55,14 @@ class SerializeHelper
     public static function toArray(SurveyInterface $survey)
     {
         $result = static::gettersToArray($survey);
-        if ($survey->getLanguage() == $survey->getDefaultLanguage()) {
+        if ($survey instanceof LocaleAwareInterface
+            && $survey->getLanguage() == $survey->getDefaultLanguage()) {
             // Serialize other languages.
             $localized = [];
             foreach($survey->getLanguages() as $language)
             {
                 if ($language != $survey->getLanguage()) {
-                    $localized[$language] = $survey->getLocalized($language);
+                    $localized[$language] = static::toArray($survey->getLocalized($language));
                 }
             }
             $result['localized'] = $localized;

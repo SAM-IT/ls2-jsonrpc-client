@@ -5,7 +5,6 @@ namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
 
 use SamIT\LimeSurvey\Interfaces\GroupInterface;
-use SamIT\LimeSurvey\Interfaces\LocaleAwareInterface;
 use SamIT\LimeSurvey\Interfaces\QuestionInterface;
 
 class Group extends Base implements GroupInterface
