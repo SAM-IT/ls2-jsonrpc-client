@@ -30,6 +30,7 @@ class Group extends Base implements GroupInterface
     public function getQuestions()
     {
         if (!isset($this->questions)) {
+            $this->questions = [];
             /** @var QuestionInterface $question */
             foreach ($this->client->getQuestions($this->surveyId, $this->getId(), $this->getLanguage()) as $question) {
                 $this->questions[$question->getTitle()] = $question;
