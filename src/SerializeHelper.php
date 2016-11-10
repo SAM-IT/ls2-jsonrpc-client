@@ -40,7 +40,7 @@ class SerializeHelper
                     $result[$key] = is_object($value) ? static::gettersToArray($value) : $value;
                 }
                 // Special handling of subquestions.
-                elseif ($object instanceOf Question && $method = 'getQuestions') {
+                elseif ($object instanceOf Question && $method === 'getQuestions') {
                     for ($i = 0; $i < $object->getDimensions(); $i++) {
                         foreach($object->getQuestions($i) as $question) {
                             $result['questions'][$i][] = self::gettersToArray($question);
