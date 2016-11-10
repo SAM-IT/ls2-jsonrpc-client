@@ -175,7 +175,7 @@ class Client
                     $answers = null;
                 }
 
-                $result[(int)$data['qid']] = $question = new Question($this, [
+                $result[$data['qid']] = $question = new Question($this, [
                     'id' => $data['qid'],
                     'text' => $data['question'],
                     'title' => $data['title'],
@@ -200,7 +200,7 @@ class Client
                         'parent' => $question
                     ]);
                     new SubQuestion($this, [
-                        'id' => (int) $data['qid'] . '-2',
+                        'id' => $data['qid'] . '-2',
                         'index' => 1,
                         'text' => "Scale 2",
                         'title' => "Scale 2",
@@ -214,7 +214,7 @@ class Client
                     // Special handling for ranking.
                     for($i = 1; $i <= count($answers1); $i++) {
                         new SubQuestion($this, [
-                            'id' => (int) $data['qid'] . '-R' . $i,
+                            'id' => $data['qid'] . '-R' . $i,
                             'text' => "Rank $i",
                             'index' => $data['question_order'],
                             'title' => "{$question->getTitle()}_$i",
@@ -235,7 +235,7 @@ class Client
                 /** @var QuestionInterface $parent */
                 $parent = $result[$data['parent_qid']];
                 new SubQuestion($this, [
-                    'id' => (int) $data['qid'],
+                    'id' => $data['qid'],
                     'text' => $data['question'],
                     'index' => $data['question_order'],
                     'title' => $data['title'],
