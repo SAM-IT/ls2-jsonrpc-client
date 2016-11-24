@@ -1,10 +1,8 @@
 <?php
 namespace SamIT\LimeSurvey\JsonRpc;
 
-use Befound\Exceptions\Exception;
 use SamIT\LimeSurvey\Interfaces\ResponseInterface;
 use SamIT\LimeSurvey\Interfaces\QuestionInterface;
-use SamIT\LimeSurvey\Interfaces\TokenInterface;
 use SamIT\LimeSurvey\Interfaces\WritableTokenInterface;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Answer;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Group;
@@ -14,7 +12,6 @@ use SamIT\LimeSurvey\JsonRpc\Concrete\SubQuestion;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Survey;
 use SamIT\LimeSurvey\Interfaces\SurveyInterface;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Token;
-use yii\helpers\ArrayHelper;
 
 class Client
 {
@@ -226,7 +223,7 @@ class Client
                     }
 
                 }
-           }
+            }
         }
 
         foreach($questions as $data) {
@@ -476,7 +473,7 @@ class Client
 
     public function getQuestionProperties($questionId, array $properties, $language = null)
     {
-        $key = __CLASS__ . __FUNCTION__ . $questionId;
+        $key = __CLASS__ . __FUNCTION__ . serialize(func_get_args());
         if (false === $result = $this->cacheGet($key)) {
             $data = $this->executeRequest('get_question_properties', $questionId, $properties, $language);
             if (isset($data['status'])) {
@@ -491,8 +488,8 @@ class Client
 
     public function getSurveyProperties($id, array $properties)
     {
-        $key = __CLASS__ . __FUNCTION__ . $id;
-        if (false && false !== $cached = $this->cacheGet($key))
+        $key = __CLASS__ . __FUNCTION__ . serialize(func_get_args());
+        if (false !== $cached = $this->cacheGet($key))
         {
             return $cached;
         }
@@ -506,7 +503,7 @@ class Client
                     return [];
                 }
             }
-            catch (Exception $e)
+            catch (\Exception $e)
             {
                 return array();
             }
@@ -516,7 +513,7 @@ class Client
 
     public function listSurveys($user = null)
     {
-        $key = __CLASS__ . __FUNCTION__ . (isset($user) ? $user : "");
+        $key = __CLASS__ . __FUNCTION__ . serialize(func_get_args());
         if (false !== $cached = $this->cacheGet($key))
         {
             return $cached;
@@ -540,42 +537,42 @@ class Client
     }
 
 
-public function listGroups($surveyId)
-{
-    $key = __CLASS__ . __FUNCTION__ . (isset($user) ? $user : "");
-    if (false === $result = $this->cacheGet($key)) {
-        $result = $this->executeRequest('list_groups', $surveyId);
-        if (isset($result['status'])) {
-            return [];
+    public function listGroups($surveyId)
+    {
+        $key = __CLASS__ . __FUNCTION__ . $surveyId;
+        if (false === $result = $this->cacheGet($key)) {
+            $result = $this->executeRequest('list_groups', $surveyId);
+            if (isset($result['status'])) {
+                return [];
+            }
+            $this->cacheSet($key, $result, 3600);
         }
-        $this->cacheSet($key, $result, 3600);
+        return $result;
     }
-    return $result;
-}
 
-public function listQuestions($surveyId, $groupId, $language)
-{
-    $key = __CLASS__ . __FUNCTION__ . serialize(func_get_args());
-    if (false === $result = $this->cacheGet($key)) {
-        $result = $this->executeRequest('list_questions', $surveyId, $groupId, $language);
-        if (isset($result['status'])) {
-            return [];
+    public function listQuestions($surveyId, $groupId, $language)
+    {
+        $key = __CLASS__ . __FUNCTION__ . serialize(func_get_args());
+        if (false === $result = $this->cacheGet($key)) {
+            $result = $this->executeRequest('list_questions', $surveyId, $groupId, $language);
+            if (isset($result['status'])) {
+                return [];
+            }
+            $this->cacheSet($key, $result, 3600);
         }
-        $this->cacheSet($key, $result, 3600);
+        return $result;
     }
-    return $result;
-}
 
 
     public function listUsers()
-{
-    $key = __CLASS__ . __FUNCTION__;
-    if (false === $result = $this->cacheGet($key)) {
-        $result = $this->executeRequest('list_users');
-        $this->cacheSet($key, $result, 3600);
+    {
+        $key = __CLASS__ . __FUNCTION__;
+        if (false === $result = $this->cacheGet($key)) {
+            $result = $this->executeRequest('list_users');
+            $this->cacheSet($key, $result, 3600);
+        }
+        return $result;
     }
-    return $result;
-}
 
 
     /**
@@ -735,7 +732,9 @@ public function listQuestions($surveyId, $groupId, $language)
      */
     public function updateToken($surveyId, $tokenId, array $attributes)
     {
-        $map = array_flip(ArrayHelper::getColumn($this->getTokenAttributeDescriptions($surveyId), 'description'));
+        $map = array_flip(array_map(function($ad) {
+            return $ad['description'];
+        }));
 
         $translated = [];
         foreach($attributes as $key => $value) {
