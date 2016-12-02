@@ -734,7 +734,7 @@ class Client
     {
         $map = array_flip(array_map(function($ad) {
             return $ad['description'];
-        }));
+        }, $this->getTokenAttributeDescriptions($surveyId)));
 
         $translated = [];
         foreach($attributes as $key => $value) {
