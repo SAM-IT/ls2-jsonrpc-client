@@ -214,7 +214,7 @@ class Client
                             'id' => $data['qid'] . '-R' . $i,
                             'text' => "Rank $i",
                             'index' => $data['question_order'],
-                            'title' => "{$question->getTitle()}_$i",
+                            'title' => "$i",
                         ], [
                             'dimension' => 0,
                             'answers' => $answers1,
