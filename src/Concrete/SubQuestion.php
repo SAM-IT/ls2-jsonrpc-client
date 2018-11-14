@@ -4,7 +4,6 @@
 namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
 
-use SamIT\LimeSurvey\Interfaces\AnswerInterface;
 use SamIT\LimeSurvey\Interfaces\QuestionInterface;
 use SamIT\LimeSurvey\JsonRpc\Client;
 

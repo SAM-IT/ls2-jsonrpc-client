@@ -1,8 +1,9 @@
 <?php
 namespace SamIT\LimeSurvey\JsonRpc;
 
-use SamIT\LimeSurvey\Interfaces\ResponseInterface;
 use SamIT\LimeSurvey\Interfaces\QuestionInterface;
+use SamIT\LimeSurvey\Interfaces\ResponseInterface;
+use SamIT\LimeSurvey\Interfaces\SurveyInterface;
 use SamIT\LimeSurvey\Interfaces\WritableTokenInterface;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Answer;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Group;
@@ -10,7 +11,6 @@ use SamIT\LimeSurvey\JsonRpc\Concrete\Question;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Response;
 use SamIT\LimeSurvey\JsonRpc\Concrete\SubQuestion;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Survey;
-use SamIT\LimeSurvey\Interfaces\SurveyInterface;
 use SamIT\LimeSurvey\JsonRpc\Concrete\Token;
 
 class Client

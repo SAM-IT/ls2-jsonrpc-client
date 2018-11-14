@@ -3,8 +3,6 @@
 
 namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
-
-use Befound\Components\DateTime;
 use SamIT\LimeSurvey\Interfaces\WritableTokenInterface;
 
 class Token extends Base implements WritableTokenInterface
