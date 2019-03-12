@@ -3,18 +3,21 @@
 
 namespace SamIT\LimeSurvey\JsonRpc\Concrete;
 
-
-use Carbon\Carbon;
 use SamIT\LimeSurvey\Interfaces\ResponseInterface;
-use SebastianBergmann\Comparator\DateTimeComparatorTest;
 
-class Response extends Base implements ResponseInterface
+class Response implements ResponseInterface
 {
     protected $surveyId;
-    /**
-     * @return int
-     */
-    public function getSurveyId()
+    private $data = [];
+
+    public function __construct(int $surveyId, array $data)
+    {
+        $this->surveyId = $surveyId;
+
+        $this->data = $data;
+    }
+
+    public function getSurveyId(): int
     {
         return $this->surveyId;
     }
@@ -24,10 +27,7 @@ class Response extends Base implements ResponseInterface
      */
     public function getId()
     {
-        if (!isset($this->attributes['id'])) {
-            vdd($this->attributes);
-        }
-        return $this->attributes['id'];
+        return $this->data['id'];
     }
 
     /**
@@ -35,7 +35,7 @@ class Response extends Base implements ResponseInterface
      */
     public function getSubmitDate()
     {
-        return $this->constructDateTimeInterface($this->attributes['submitdate']);
+        return $this->constructDateTimeInterface($this->data['submitdate']);
     }
 
     /**
@@ -43,6 +43,22 @@ class Response extends Base implements ResponseInterface
      */
     public function getData()
     {
-        return $this->attributes;
+        return $this->data;
+    }
+    /**
+     * @param string $value The current time.
+     * @return \DateTimeInterface | null
+     */
+    protected function constructDateTimeInterface($value)
+    {
+        // A valid date time will contain at the very least 8 characters.
+        if (empty($value)
+            || strlen($value) < 8
+            // And contains at least one non zero digit.
+            || !preg_match('/[1-9]/', $value)
+        ) {
+            return null;
+        }
+        return new \DateTimeImmutable($value);
     }
 }

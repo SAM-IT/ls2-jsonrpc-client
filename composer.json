@@ -9,6 +9,8 @@
         }
     ],
     "require": {
+        "php": ">7.1",
+        "ext-json": "*",
         "sam-it/ls-interfaces": "^0.5.0"
     },
     "suggest" : {

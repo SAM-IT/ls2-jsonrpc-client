@@ -588,9 +588,7 @@ class Client
         if (is_string($data)) {
 
             foreach(json_decode(base64_decode($data), true)['responses'] as $responseData) {
-                $responses[] = new Response($this, array_pop($responseData), [
-                    'surveyId' => intval($surveyId)
-                ]);
+                $responses[] = new Response(intval($surveyId), array_pop($responseData));
             }
 
         }
@@ -613,9 +611,7 @@ class Client
         $responses = [];
         if (is_array($result) && isset($result['responses'])) {
             foreach($result['responses'] as $responseData) {
-                $responses[] = new Response($this, array_pop($responseData), [
-                    'surveyId' => intval($surveyId)
-                ]);
+                $responses[] = new Response(intval($surveyId), array_pop($responseData));
             }
         }
         return $responses;
