@@ -59,13 +59,22 @@ class JsonRpcClient
     private $notification = false;
 
     /**
+     * @var int
+     */
+    private $timeout;
+    /**
      * Takes the connection parameters
      *
      * @param string  $url
      * @param boolean $debug
      */
-    public function __construct($url, $debug = false)
-    {
+    public function __construct(
+        $url,
+        $debug = false,
+        int $timeout = 5
+    ) {
+
+        $this->timeout = $timeout;
         // server URL
         $this->url = $url;
         // proxy
@@ -142,7 +151,7 @@ class JsonRpcClient
                 'method'  => 'POST',
                 'header'  => 'Content-type: application/json',
                 'content' => $request,
-                'timeout' => 5
+                'timeout' => $this->timeout
             )
         );
         $context = stream_context_create($opts);
