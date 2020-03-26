@@ -183,6 +183,18 @@ class Client
                     'answers' => $answers
                 ]);
 
+                if (($data['other'] ?? null) === 'Y') {
+                    $result[$data['qid']] = $question = new Question($this, [
+                        'id' => $data['qid'] . 'other',
+                        'text' => $data['question'] . 'other',
+                        'title' => $data['title'] . 'other',
+                        'index' => (int)$data['question_order']
+                    ], [
+                        'language' => $language,
+                        'surveyId' => $surveyId,
+                    ]);
+                }
+
                 // Special handling for array dual scale.
                 if ($data['type'] == '1') {
 
