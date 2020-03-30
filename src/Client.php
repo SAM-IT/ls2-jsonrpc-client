@@ -185,9 +185,9 @@ class Client
 
                 if (($data['other'] ?? null) === 'Y') {
                     $result[$data['qid'] . '_other'] = new Question($this, [
-                        'id' => $data['qid'] . '_other',
-                        'text' => $data['question'] . 'other',
-                        'title' => $data['title'] . ' - other',
+                        'id' => $data['qid'] . 'other',
+                        'text' => $data['question'] . ' - Other',
+                        'title' => $data['title'] . '_other',
                         'index' => (int)$data['question_order']
                     ], [
                         'language' => $language,
